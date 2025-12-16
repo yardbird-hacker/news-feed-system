@@ -1,0 +1,23 @@
+# OS
+.DS_Store
+
+# Java
+target/
+*.log
+
+# Go
+bin/
+*.exe
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Env
+.env
+
+# IDE
+.vscode/
+.idea/
+
