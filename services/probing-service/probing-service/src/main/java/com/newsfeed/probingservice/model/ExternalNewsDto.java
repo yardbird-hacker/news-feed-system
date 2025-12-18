@@ -6,10 +6,12 @@ package com.newsfeed.probingservice.model;
 related': '', 'source': 'MarketWatch', 'summary'
  */
 
-record FinnhubResponseDto(
-        String id,
+import java.time.Instant;
+
+public record ExternalNewsDto(
+        Integer id,
         String category,
-        String datetime,
+        Instant publishedAt,
         String headline,
         String related,
         String source,
