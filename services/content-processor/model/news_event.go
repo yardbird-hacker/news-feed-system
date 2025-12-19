@@ -1,7 +1,7 @@
 package model
 
 type ExternalNews struct {
-	ID				int			`json:"id"`
+	ID				int64			`json:"id"`
 	Category		string		`json:"category"`
 	PublishAt		float64		`json:"publishedAt"`
 	Headline    	string    	`json:"headline"`

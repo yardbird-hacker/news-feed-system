@@ -1,33 +1,40 @@
 package consumer
 
 import (
+	"content-processor/fetcher"
+	"content-processor/model"
+	"content-processor/processor"
+	"content-processor/producer"
 	"encoding/json"
 	"log"
-
-	"content-processor/model"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 )
 
 type NewsConsumer struct {
 	consumer *kafka.Consumer
+	processedProducer producer.ProcessedProducer
 }
 
-func NewNewsConsumer() (*NewsConsumer, error) {
-	c, err := kafka.NewConsumer(&kafka.ConfigMap{
-		"bootstrap.servers": "localhost:9092",
-		"group.id":          "content-processor",
-		"auto.offset.reset": "earliest",
-	})
-	if err != nil {
-		return nil, err
-	}
+func NewNewsConsumer(
+    processedProducer producer.ProcessedProducer,
+) (*NewsConsumer, error) {
 
-	c.SubscribeTopics([]string{"news.article"}, nil)
+    c, err := kafka.NewConsumer(&kafka.ConfigMap{
+        "bootstrap.servers": "localhost:9092",
+        "group.id":          "content-processor1",
+        "auto.offset.reset": "earliest",
+    })
+    if err != nil {
+        return nil, err
+    }
 
-	return &NewsConsumer{
-		consumer: c,
-	}, nil
+    c.SubscribeTopics([]string{"news.article"}, nil)
+
+    return &NewsConsumer{
+        consumer:          c,
+        processedProducer: processedProducer,
+    }, nil
 }
 
 func (n *NewsConsumer) Start() {
@@ -46,6 +53,33 @@ func (n *NewsConsumer) Start() {
 			continue
 		}
 
+		bodyText, url_err := fetcher.Fetch(event.URL)
+		if url_err != nil {
+			log.Printf("Failed to fetch news from %s with %s\n", event.URL, url_err)
+			bodyText = ""
+		}
+		keywords := processor.ProcessEvent(event, bodyText)
+		//log.Printf("words=%v", words)
+		//log.Println(event.ID, len(workeywordsds))
+
 		log.Printf("✅ Received event: %+v\n", event)
+
+
+		for _, kw := range keywords {
+			publishedTime := int64(event.PublishAt)
+			wordIndexEvent := model.KeywordIndexEvent{
+				Keyword:     kw,
+				NewsID:      event.ID,
+				URL:         event.URL,
+				PublishedAt: publishedTime,
+				ExpiresAt:   publishedTime + 7*24*3600,
+				Source:      event.Source,
+			}
+	
+			if err := n.processedProducer.Send(wordIndexEvent); err != nil {
+				log.Printf("Failed to send word index event to Kafka with %v\n", err)
+				continue
+			}
+		}
 	}
 }
