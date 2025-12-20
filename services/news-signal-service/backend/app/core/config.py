@@ -13,6 +13,7 @@ from pydantic import (
 )
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing_extensions import Self
+from sqlalchemy.engine import URL
 
 
 def parse_cors(v: Any) -> list[str] | str:
@@ -24,6 +25,7 @@ def parse_cors(v: Any) -> list[str] | str:
 
 
 class Settings(BaseSettings):
+    PROJECT_NAME: str = "news-signal-service"
     model_config = SettingsConfigDict(
         # Use top level .env file (one level above ./backend/)
         env_file="../.env",
@@ -36,6 +38,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8
     FRONTEND_HOST: str = "http://localhost:5173"
     ENVIRONMENT: Literal["local", "staging", "production"] = "local"
+    SENTRY_DSN: AnyUrl | None = None
 
     BACKEND_CORS_ORIGINS: Annotated[
         list[AnyUrl] | str, BeforeValidator(parse_cors)
@@ -48,25 +51,26 @@ class Settings(BaseSettings):
             self.FRONTEND_HOST
         ]
 
-    PROJECT_NAME: str
-    SENTRY_DSN: HttpUrl | None = None
-    POSTGRES_SERVER: str
-    POSTGRES_PORT: int = 5432
-    POSTGRES_USER: str
-    POSTGRES_PASSWORD: str = ""
-    POSTGRES_DB: str = ""
+    MYSQL_HOST: str
+    MYSQL_PORT: int = 3306
+    MYSQL_DB: str
+    MYSQL_USER: str
+    MYSQL_PASSWORD: str
 
     @computed_field  # type: ignore[prop-decorator]
     @property
-    def SQLALCHEMY_DATABASE_URI(self) -> PostgresDsn:
-        return PostgresDsn.build(
-            scheme="postgresql+psycopg",
-            username=self.POSTGRES_USER,
-            password=self.POSTGRES_PASSWORD,
-            host=self.POSTGRES_SERVER,
-            port=self.POSTGRES_PORT,
-            path=self.POSTGRES_DB,
-        )
+    def SQLALCHEMY_DATABASE_URI(self) -> str:
+        return URL.create(
+            drivername="mysql+mysqlconnector",
+            username=self.MYSQL_USER,
+            password=self.MYSQL_PASSWORD,
+            host=self.MYSQL_HOST,
+            port=self.MYSQL_PORT,
+            database=self.MYSQL_DB,
+        ).render_as_string(hide_password=False)
+
+    KAFKA_KEYWORD_TOPIC: str
+    KAFKA_BOOTSTRAP_SERVERS: list[str] = ["localhost:9092"]
 
     SMTP_TLS: bool = True
     SMTP_SSL: bool = False
@@ -108,7 +112,7 @@ class Settings(BaseSettings):
     @model_validator(mode="after")
     def _enforce_non_default_secrets(self) -> Self:
         self._check_default_secret("SECRET_KEY", self.SECRET_KEY)
-        self._check_default_secret("POSTGRES_PASSWORD", self.POSTGRES_PASSWORD)
+        self._check_default_secret("MYSQL_PASSWORD", self.MYSQL_PASSWORD)
         self._check_default_secret(
             "FIRST_SUPERUSER_PASSWORD", self.FIRST_SUPERUSER_PASSWORD
         )
