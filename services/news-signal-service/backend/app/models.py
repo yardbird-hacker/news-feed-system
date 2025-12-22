@@ -41,10 +41,32 @@ class UpdatePassword(SQLModel):
 
 
 # Database model, database table inferred from class name
-class User(UserBase, table=True):
-    id: int = Field(default_factory=None, primary_key=True)
-    hashed_password: str
-    #items: list["Item"] = Relationship(back_populates="owner", cascade_delete=True)
+# class User(UserBase, table=True):
+#     id: int = Field(default_factory=None, primary_key=True)
+#     hashed_password: str
+#     #items: list["Item"] = Relationship(back_populates="owner", cascade_delete=True)
+
+# News-Feed-Service WebApi
+class User(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    name: str
+    email: str
+    is_active: bool = True
+
+class UserCreate(SQLModel):
+    name: str
+    email: str
+    #password: str   # plain text, validation용
+
+class UserRead(SQLModel):
+    id: int
+    name: str
+    email: str
+    is_active: bool
+
+
+
+
 
 
 # Properties to return via API, id is always required
