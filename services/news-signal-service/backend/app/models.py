@@ -59,6 +59,10 @@ class User(SQLModel, table=True):
     email: EmailStr
     is_active: bool = True
 
+    # user: "User" = Relationship()
+
+
+
 class UserCreate(SQLModel):
     name: str
     email: EmailStr
@@ -71,21 +75,12 @@ class UserRead(SQLModel):
     is_active: bool
 
 # rules configuration DTO
-class NotificationRuleCreate(SQLModel):
-    keyword: str
-    channels: list["NotificationChannelCreate"]
-
-    def to_db(self, *, user_id: int) -> NotificationRuleDB:
-        return NotificationRuleDB(
-            user_id=user_id,
-            keyword=self.keyword,
-        )
 class NotificationChannelCreate(SQLModel):
     channel: str            # email | slack
     delivery_mode: str      # realtime | digest
     frequency: Optional[str] = None
 
-    def to_db(self, *, rule_id: int) -> NotificationChannelDB:
+    def to_db(self, *, rule_id: int) -> "NotificationChannelDB":
         return NotificationChannelDB(
             rule_id=rule_id,
             channel=self.channel,
@@ -93,6 +88,19 @@ class NotificationChannelCreate(SQLModel):
             frequency=self.frequency,
             is_active=True,
         )
+
+
+class NotificationRuleCreate(SQLModel):
+    keyword: str
+    channels: list[NotificationChannelCreate]
+
+    def to_db(self, *, user_id: int) -> "NotificationRuleDB":
+        return NotificationRuleDB(
+            user_id=user_id,
+            keyword=self.keyword,
+        )
+    
+
 class NotificationRuleRead(SQLModel):
     id: int
     keyword: str
@@ -114,6 +122,11 @@ class NotificationRuleDB(SQLModel, table=True):
 
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
+    # user: Optional["User"] = Relationship(back_populates="rules")
+    # channels: list["NotificationChannelDB"] = Relationship(back_populates="rule")
+
+
+
 class NotificationChannelDB(SQLModel, table=True):
     __tablename__ = "notification_channels"
 
@@ -128,6 +141,8 @@ class NotificationChannelDB(SQLModel, table=True):
     is_active: bool = Field(default=True)
     last_sent_at: Optional[datetime] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
+
+    # rule: Optional[NotificationRuleDB] = Relationship(back_populates="channels")
 
 
 
@@ -164,6 +179,7 @@ class Item(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     news_id: int
     keyword: str
+    url: str
     score: Optional[float]  = None
     extractor_version: Optional[str]  = None
     created_at: datetime
@@ -206,3 +222,5 @@ class NewsKeywordPublic(SQLModel):
     score: Optional[float]  = None
     extractor_version: Optional[str] = None
     created_at: datetime
+
+

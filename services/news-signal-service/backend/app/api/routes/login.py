@@ -67,11 +67,12 @@ def recover_password(email: str, session: SessionDep) -> Message:
     email_data = generate_reset_password_email(
         email_to=user.email, email=email, token=password_reset_token
     )
-    send_email(
-        email_to=user.email,
-        subject=email_data.subject,
-        html_content=email_data.html_content,
-    )
+
+    # send_email(
+    #     email_to=user.email,
+    #     subject=email_data.subject,
+    #     html_content=email_data.html_content,
+    # )
     return Message(message="Password recovery email sent")
 
 
