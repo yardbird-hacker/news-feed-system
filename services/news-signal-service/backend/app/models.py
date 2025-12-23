@@ -52,6 +52,8 @@ class UpdatePassword(SQLModel):
 
 # News-Feed-Service WebApi
 class User(SQLModel, table=True):
+    __tablename__ = "users"   # ✅ 여기서 테이블 이름 지정
+
     id: Optional[int]  = Field(default=None, primary_key=True)
     name: str
     email: EmailStr

@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Optional
 
-from app.models.user import UserDB
+from app.models import UserDB
 
 
 class UsersRepository(ABC):

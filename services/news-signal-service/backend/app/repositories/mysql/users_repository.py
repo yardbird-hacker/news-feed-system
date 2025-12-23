@@ -5,7 +5,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.core.db import SessionLocal
-from app.models.user import UserDB
+from app.models import UserDB
 from app.repositories.users_repository import UsersRepository
 
 logger = logging.getLogger(__name__)

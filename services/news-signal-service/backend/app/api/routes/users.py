@@ -1,5 +1,6 @@
 import uuid
 from typing import Any
+import logging
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import col, delete, func, select
@@ -26,6 +27,9 @@ from app.models import (
     UserRead,
 )
 from app.utils import generate_new_account_email, send_email
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -75,11 +79,13 @@ def read_users(session: SessionDep, skip: int = 0, limit: int = 100) -> Any:
 #         )
 #     return user
 
-@router.post("/users", response_model=UserRead)
-def create_user(user: UserCreate, session: Session):
+@router.post("", response_model=UserRead)
+def create_user(user: UserCreate, session: SessionDep):
     #hashed = hash_password(user.password)
+    logger.info("Received: PUT /api/v1/users %s", user)
 
-    db_user = UserDB(
+
+    db_user = User(
         name = user.name,
         email=user.email,
     )
