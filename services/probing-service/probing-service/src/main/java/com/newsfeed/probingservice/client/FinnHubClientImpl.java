@@ -12,7 +12,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
-@Component
+
 public class FinnHubClientImpl implements NewsSourceClient {
     private final WebClient webClient;
     private final String apiKey;

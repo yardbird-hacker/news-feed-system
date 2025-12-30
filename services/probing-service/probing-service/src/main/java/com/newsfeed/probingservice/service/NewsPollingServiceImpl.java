@@ -9,35 +9,71 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutorService;
 
 @Service
 class NewsPollingServiceImpl implements NewsPollingService {
 
-    private final NewsSourceClient newsSourceClient;
+    //private final NewsSourceClient newsSourceClient;
+    private final Map<String, NewsSourceClient> clients;
     private final Cache<Integer, Boolean> dedupCache;
     private final KafkaTemplate<String, ExternalNewsDto> kafkaTemplate;
+    private final ExecutorService executorService;
+
     //@Value("${news.topic.name:news.events}")
     private String topic = "news.article";
 
-
-
-    NewsPollingServiceImpl (NewsSourceClient newsSourceClient,
+    NewsPollingServiceImpl (Map<String, NewsSourceClient> clients,
                             Cache<Integer, Boolean> cache,
-                            KafkaTemplate<String, ExternalNewsDto> kafkaTemplate) {
-        this.newsSourceClient = newsSourceClient;
+                            KafkaTemplate<String, ExternalNewsDto> kafkaTemplate,
+                            ExecutorService executorService) {
+        this.clients = clients;
         this.dedupCache = cache;
         this.kafkaTemplate = kafkaTemplate;
+        this.executorService = executorService;
     }
 
-    public void poll() {
-        System.out.println("Send event to Kafka!!");
-        List<ExternalNewsDto> externalNews = newsSourceClient.fetchNews();
+    public void poll(String source) {
 
-        externalNews.stream()
-                .filter(this::isNew)
-                .forEach(event -> kafkaTemplate.send(topic, event.id().toString(), event));
+        System.out.println(clients.size());
 
-        return;
+        executorService.submit(() -> {
+            try {
+                System.out.println(
+                        "Polling started on thread: " +
+                                Thread.currentThread().getName() + " : " + source
+                );
+
+                NewsSourceClient newsSourceClient = clients.get(source);
+
+                Thread.sleep(2_000);
+
+                if (newsSourceClient == null)
+                    throw new RuntimeException("Not supported news service [" + source + "].");
+
+                List<ExternalNewsDto> externalNews =
+                        newsSourceClient.fetchNews();
+
+                externalNews.stream()
+                        .forEach(event ->
+                                kafkaTemplate.send(
+                                        topic,
+                                        event.id().toString(),
+                                        event
+                                )
+                        );
+
+                System.out.println(
+                        "Finished thread: " +
+                                Thread.currentThread().getName()
+                        + " : " + source
+                );
+            } catch (Exception e) {
+                System.err.println("Polling failed");
+                e.printStackTrace();
+            }
+        });
     }
 
     private Boolean isNew(ExternalNewsDto dto) {

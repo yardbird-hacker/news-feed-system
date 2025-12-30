@@ -12,8 +12,18 @@ public class NewsPollingScheduler {
         this.newsPollingService = service;
     }
 
-    @Scheduled(fixedDelay = 10_000)
+    @Scheduled(fixedDelay = 1_000)
     public void run() {
-        newsPollingService.poll();
+        newsPollingService.poll("finnhub");
+    }
+
+    @Scheduled(fixedDelay = 2_000)
+    public void runWith2Min() {
+        newsPollingService.poll("finnhub1");
+    }
+
+    @Scheduled(fixedDelay = 3_000)
+    public void runWith3Min() {
+        newsPollingService.poll("finnhub2");
     }
 }
